@@ -18,15 +18,15 @@
     <!-- Display fetched documents -->
     {% if formatted_documents %}
         <h2>Documents:</h2>
-        <ul>
+        <ol>
             {% for doc in formatted_documents %}
                 <li>
                     <pre>{{ doc.formatted_str }}</pre>  <!-- Display formatted document -->
                     <!-- Add an "Edit" button with a unique identifier for each document -->
-                    <a href="{% url 'edit_document' doc.doc_id %}">Edit</a>
+                    <a href="{% url 'edit_document' doc_id=doc.doc_id database_name=doc.database_name collection_name=doc.collection_name %}">Edit</a>
                 </li>
             {% endfor %}
-        </ul>
+        </ol>
     {% endif %}
 </body>
 </html>

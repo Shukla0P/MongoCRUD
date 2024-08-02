@@ -3,6 +3,7 @@ from django.http import HttpResponse, JsonResponse
 from pymongo import MongoClient
 from .forms import AddDocumentForm, DocumentSelectionForm, EditDocumentForm
 import json
+from bson import ObjectId
 
 client = MongoClient("localhost", 27017)
 
@@ -37,27 +38,29 @@ def add_records(request):
                   
 def list_documents(request):
     formatted_documents = []
-    form = DocumentSelectionForm(request.POST or None)
+    form = DocumentSelectionForm(request.POST)
 
     if request.method == "POST" and form.is_valid():
         database_name = form.cleaned_data['database_name']
         collection_name = form.cleaned_data['collection_name']
 
         # Connect to MongoDB
-        client = MongoClient('mongodb://localhost:27017/')  # Adjust connection string if needed
+        client = MongoClient('mongodb://localhost:27017/')
         db = client[database_name]
         collection = db[collection_name]
 
         # Fetch all documents from the specified collection
         documents = list(collection.find())
-        
+
         # Convert each document to a formatted string
         for doc in documents:
             doc_id = doc.get('_id')
             formatted_str = '\n'.join(f"{key}: {value}" for key, value in doc.items() if key != '_id')
             formatted_documents.append({
                 'formatted_str': formatted_str,
-                'doc_id': str(doc_id)  # Convert ObjectId to string for URL usage
+                'doc_id': str(doc_id),  # Convert ObjectId to string for URL usage
+                'database_name': database_name,
+                'collection_name': collection_name
             })
 
     context = {
@@ -66,39 +69,55 @@ def list_documents(request):
     }
     return render(request, 'list_documents.html', context)
 
-def edit_document(request, doc_id):
-    client = MongoClient('mongodb://localhost:27017/')  # Adjust connection string if needed
-
-    database_name = str(request.GET.get('database_name'))
-    collection_name = str(request.GET.get('collection_name'))
-
+def edit_document(request, database_name, collection_name, doc_id):
+    # Connect to MongoDB
+    client = MongoClient("mongodb://localhost:27017/")
     db = client[database_name]
     collection = db[collection_name]
-    
-    if request.method == "POST":
+
+    if request.method == 'POST':
         form = EditDocumentForm(request.POST)
         if form.is_valid():
-            update_data = form.cleaned_data['document_data']
-            # Update the document
-            collection.update_one({'_id': doc_id}, {'$set': update_data})
-            print("inside POST")
-            return redirect('list_documents')
+            document_data = form.cleaned_data['document_data']
+            # Convert the document data from JSON string to dictionary
+            updated_document = json.loads(document_data)
+            del updated_document['_id']
+
+            try:
+                # Update the document in the collection
+                result = collection.update_one({'_id': ObjectId(doc_id)}, {'$set': updated_document})
+
+                return JsonResponse({'status': 'success', 'matched_count': result.matched_count, 'modified_count': result.modified_count})
+            except Exception as e:
+                return JsonResponse({'status': 'error', 'message': str(e)})
+        else:
+            # If the form is not valid, print the form errors
+            print("Form is not valid")
+            print(form.errors)
+    
     else:
-        document = collection.find_one({'_id': doc_id})
-        # Initialize form with document data
+        # Convert doc_id to ObjectId
+        try:
+            object_id = ObjectId(doc_id)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'Invalid document ID: {e}'})
+
+        # Fetch the document from the database
+        document = collection.find_one({'_id': object_id})
+        print(document)
+
+        if not document:
+            return JsonResponse({'status': 'error', 'message': 'Document not found'})
+
+        document['_id'] = str(document['_id'])
+                         
+        # Pre-fill the form with the document data
         form = EditDocumentForm(initial={
-            'database_name': database_name,
-            'collection_name': collection_name,
-            'document_data': document
+            'document_id': str(document['_id']),
+            'document_data': json.dumps(document, indent=4)
         })
 
-    # Ensure 'document' is always defined before rendering
-    document = collection.find_one({'_id': doc_id})
-
-    return render(request, 'edit_document.html', {'form': form, 'document': document})
-
-def update_records(request):
-    return HttpResponse("Here we'll update existing record")
+    return render(request, 'edit_document.html', {'form': form, 'database_name': database_name, 'collection_name': collection_name, 'doc_id': doc_id})
 
 def delete_records(request):
     return HttpResponse("This page is for deleting the records")

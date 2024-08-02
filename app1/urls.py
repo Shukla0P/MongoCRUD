@@ -7,5 +7,5 @@ urlpatterns=[
 
     path('delete',views.delete_records, name="Delete"),
     path('update/', views.list_documents, name='list_documents'),
-    path('edit/<str:doc_id>/', views.edit_document, name='edit_document'),
+    path('edit/<str:database_name>/<str:collection_name>/<str:doc_id>/', views.edit_document, name='edit_document'),
 ]
