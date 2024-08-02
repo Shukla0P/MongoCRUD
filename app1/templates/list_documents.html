@@ -1,4 +1,3 @@
-<!-- templates/list_documents.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,12 +17,17 @@
     <!-- Display fetched documents -->
     {% if formatted_documents %}
         <h2>Documents:</h2>
-        <ol>
+        <ol>  <!-- Use an ordered list for numbered indexing -->
             {% for doc in formatted_documents %}
                 <li>
                     <pre>{{ doc.formatted_str }}</pre>  <!-- Display formatted document -->
-                    <!-- Add an "Edit" button with a unique identifier for each document -->
-                    <a href="{% url 'edit_document' doc_id=doc.doc_id database_name=doc.database_name collection_name=doc.collection_name %}">Edit</a>
+                    <!-- Edit button -->
+                    <a href="{% url 'edit_document' doc_id=doc.doc_id database_name=doc.database_name collection_name=doc.collection_name %}"><button>Edit</button></a>
+                    
+                    <!-- Delete button form that redirects to confirmation page -->
+                    <a href="{% url 'confirm_delete' database_name=doc.database_name collection_name=doc.collection_name doc_id=doc.doc_id %}">
+                        <button type="button">Delete</button>
+                    </a>
                 </li>
             {% endfor %}
         </ol>

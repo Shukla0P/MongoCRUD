@@ -4,6 +4,7 @@ from pymongo import MongoClient
 from .forms import AddDocumentForm, DocumentSelectionForm, EditDocumentForm
 import json
 from bson import ObjectId
+from django.views.decorators.http import require_POST
 
 client = MongoClient("localhost", 27017)
 
@@ -119,9 +120,60 @@ def edit_document(request, database_name, collection_name, doc_id):
 
     return render(request, 'edit_document.html', {'form': form, 'database_name': database_name, 'collection_name': collection_name, 'doc_id': doc_id})
 
-def delete_records(request):
-    return HttpResponse("This page is for deleting the records")
+@require_POST
+def delete_document(request):
+    database_name = request.POST.get('database_name')
+    collection_name = request.POST.get('collection_name')
+    document_id = request.POST.get('document_id')
 
+    try:
+        # Replace with your MongoDB URI
+        client = MongoClient("mongodb://localhost:27017/")
+        db = client[database_name]
+        collection = db[collection_name]
+
+        # Convert document_id to ObjectId
+        object_id = ObjectId(document_id)
+
+        # Delete the document from the collection
+        result = collection.delete_one({'_id': object_id})
+
+        if result.deleted_count == 0:
+            return JsonResponse({'status': 'error', 'message': 'Document not found'})
+        
+        return redirect('list_documents')  # Redirect to the list documents page
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+def confirm_delete(request, database_name, collection_name, doc_id):
+    try:
+        # Replace with your MongoDB URI
+        client = MongoClient("mongodb://localhost:27017/")
+        db = client[database_name]
+        collection = db[collection_name]
+
+        # Convert document_id to ObjectId
+        object_id = ObjectId(doc_id)
+
+        # Find the document to confirm deletion
+        document = collection.find_one({'_id': object_id})
+
+        if not document:
+            return HttpResponse("Document not found", status=404)
+
+        # Convert ObjectId to string in the document
+        document['_id'] = str(document['_id'])
+
+        context = {
+            'document': document,
+            'database_name': database_name,
+            'collection_name': collection_name,
+            'doc_id': doc_id,
+        }
+        return render(request, 'confirm_delete.html', context)
+    except Exception as e:
+        return HttpResponse(f"Error: {str(e)}", status=500)
+    
 def home(request):
     db_names=client.list_database_names()
     return render(request, 'home.html',{'databases':db_names})

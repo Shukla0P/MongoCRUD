@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Confirm Delete</title>
+</head>
+<body>
+    <h1>Confirm Deletion</h1>
+
+    <p>Are you sure you want to delete this document?</p>
+    <pre>{{ document|json_script:"document-data" }}</pre>  <!-- Display document details -->
+
+    <!-- Confirmation Form -->
+    <form action="{% url 'delete_document' %}" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="database_name" value="{{ database_name }}">
+        <input type="hidden" name="collection_name" value="{{ collection_name }}">
+        <input type="hidden" name="document_id" value="{{ doc_id }}">
+        <button type="submit" name="confirm" value="yes">Yes, delete</button>
+        <a href="{% url 'list_documents' %}"><button type="button">No, cancel</button></a>
+    </form>
+</body>
+</html>
