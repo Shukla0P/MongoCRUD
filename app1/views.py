@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from pymongo import MongoClient
 from .forms import AddDocumentForm, DocumentSelectionForm, EditDocumentForm
 import json
@@ -17,13 +17,23 @@ def add_records(request):
             # Convert the document data from JSON string to dictionary
             document = json.loads(document_data)
             
-            # Replace with your MongoDB URI
-            client = MongoClient("mongodb://localhost:27017/")
-            db = client[database_name]
-            collection = db[collection_name]
-            
-            # Insert the document into the collection
-            result = collection.insert_one(document)
+            try:
+                # Replace with your MongoDB URI
+                client = MongoClient("mongodb://localhost:27017/")
+                db = client[database_name]
+                collection = db[collection_name]
+                
+                # Insert the document into the collection
+                result = collection.insert_one(document)
+                
+                return JsonResponse({'status': 'success', 'inserted_id': str(result.inserted_id)})
+            except Exception as e:
+                return JsonResponse({'status': 'error', 'message': str(e)})
+    
+    else:
+        form = AddDocumentForm()
+    
+    return render(request, 'add_document.html', {'form': form})
                   
 def list_documents(request):
     formatted_documents = []
