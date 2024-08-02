@@ -1,0 +1,16 @@
+<!-- templates/add_document.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Document</title>
+</head>
+<body>
+    <h1>Add Document to MongoDB</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Add Document</button>
+    </form>
+</body>
+</html>

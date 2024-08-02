@@ -1,0 +1,28 @@
+<!-- templates/edit_document.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Document</title>
+</head>
+<body>
+    <h1>Edit Document</h1>
+    
+    <!-- Display the current document data -->
+    {% if document %}
+        <h2>Current Document:</h2>
+        <pre>
+            {% for key, value in document.items %}
+                {{ key }}: {{ value }}
+            {% endfor %}
+        </pre>
+    {% endif %}
+
+    <!-- Form for editing the document -->
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Update Document</button>
+    </form>
+</body>
+</html>
